@@ -2,6 +2,17 @@ const env = require('../.env');
 const Telegraf = require('telegraf');
 const bot = new Telegraf(env.token);
 
+
+var options = {
+    reply_markup: JSON.stringify({
+        inline_keyboard: [
+            [{ text: 'Option 1', callback_data: '1' }],
+            [{ text: 'Option 2', callback_data: '2' }],
+            [{ text: 'Option 3', callback_data: '3' }]
+        ]
+    })
+};
+
 bot.start(async (ctx) => {
     const from = ctx.update.message.from
     console.log(from);
@@ -10,8 +21,15 @@ bot.start(async (ctx) => {
         return;
     }
     await ctx.reply(`Seja bem Vindo, ${from.first_name}!`);
-    await ctx.reply('Isso e oque posso fazer: ');
+    await ctx.reply('Isso e oque posso fazer: ', options);
+});
 
+bot.on('callback_query', function onCallbackQuery(ctx, next) {
+    const action = ctx.update.callback_query.data;
+    if (action === '1') {
+        ctx.reply('You hit button 1');
+        next()
+    }
 });
 
 bot.on('text', async (ctx, next) => {
