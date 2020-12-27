@@ -1,17 +1,18 @@
 const env = require('../.env');
 const Telegraf = require('telegraf');
+const Extra = require('telegraf/extra');
+const Markup = require('telegraf/markup');
 const bot = new Telegraf(env.token);
 
 
-var options = {
-    reply_markup: JSON.stringify({
-        inline_keyboard: [
-            [{ text: 'Option 1', callback_data: '1' }],
-            [{ text: 'Option 2', callback_data: '2' }],
-            [{ text: 'Option 3', callback_data: '3' }]
-        ]
-    })
-};
+const options = Extra.markup(Markup.inlineKeyboard(
+    [
+        Markup.callbackButton('Qual meu Ip', 'getIp'),
+        Markup.callbackButton('Dowloands', 'getDowloands'),
+        Markup.callbackButton('Armazenamento', 'getArmazenamento'),
+        Markup.callbackButton('Criptomoeda', 'getCriptomoeda')
+    ], {columns: 1}
+));
 
 bot.start(async (ctx) => {
     const from = ctx.update.message.from
@@ -24,14 +25,13 @@ bot.start(async (ctx) => {
     await ctx.reply('Isso e oque posso fazer: ', options);
 });
 
-bot.on('callback_query', function onCallbackQuery(ctx, next) {
-    const action = ctx.update.callback_query.data;
-    if (action === '1') {
-        ctx.reply('You hit button 1');
-        next()
-    }
+bot.action('getIp', async ctx => {
+    await ctx.reply(`Executa domando na console capturando ip`);
+    const ip = '123.100.123.84'
+    await ctx.answerCbQuery(`Seu ip e ${ip} ou mayke.mooo.com`)
 });
 
+/*
 bot.on('text', async (ctx, next) => {
     const idUser = ctx.update.message.from.id;
     if(idUser === env.user) {
@@ -47,4 +47,14 @@ bot.on('text', async (ctx, next) => {
     next()
 });
 
+bot.hears('getIp', async (ctx) => {
+    await ctx.reply('este e seu ip');
+});
+
+bot.hears(['dowloand', 'torrent'], async (ctx) => {
+    await ctx.reply('estes sao os arquivos baixados');
+});
+
+
+ */
 bot.startPolling();
