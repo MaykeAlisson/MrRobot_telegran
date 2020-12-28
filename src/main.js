@@ -7,11 +7,24 @@ const bot = new Telegraf(env.token);
 
 const options = Extra.markup(Markup.inlineKeyboard(
     [
-        Markup.callbackButton('Qual meu Ip', 'getIp'),
-        Markup.callbackButton('Dowloands', 'getDowloands'),
-        Markup.callbackButton('Armazenamento', 'getArmazenamento'),
-        Markup.callbackButton('Criptomoeda', 'getCriptomoeda')
+        Markup.callbackButton('Develop', 'getDevelop'),
+        Markup.callbackButton('Finanças', 'getFinancas'),
+        Markup.callbackButton('Outros', 'getOutros')
     ], {columns: 1}
+));
+
+const optionsDevelop = Extra.markup(Markup.inlineKeyboard(
+    [
+        Markup.callbackButton('Ip', 'getIp'),
+        Markup.callbackButton('Armazenamento', 'getArmazenamento')
+    ], {columns: 1}
+));
+
+const optionsFinancas = Extra.markup(Markup.inlineKeyboard(
+    [
+        Markup.callbackButton('Cotações', 'getCotacoes'),
+        Markup.callbackButton('Carteira', 'getCarteira')
+    ], {columns: 2}
 ));
 
 bot.start(async (ctx) => {
@@ -25,10 +38,47 @@ bot.start(async (ctx) => {
     await ctx.reply('Isso e oque posso fazer: ', options);
 });
 
+
+// Develop
+
+bot.action('getDevelop', async ctx => {
+    await ctx.reply('Options Develop : ', optionsDevelop);
+});
+
 bot.action('getIp', async ctx => {
-    await ctx.reply(`Executa domando na console capturando ip`);
     const ip = '123.100.123.84'
     await ctx.answerCbQuery(`Seu ip e ${ip} ou mayke.mooo.com`)
+});
+
+bot.action('getArmazenamento', async ctx => {
+    const arm = '30Gb livre'
+    await ctx.reply(`Seu servidor esta com, ${arm}!`);
+});
+
+// Financas
+
+bot.action('getFinancas', async ctx => {
+    await ctx.reply('Options Finaças : ', optionsFinancas);
+});
+
+bot.action('getCotacoes', async ctx => {
+    await ctx.reply('Executa api e retorna valores do bitcoins, dolar, bovespa ...');
+});
+
+bot.action('getCarteira', async ctx => {
+    const arm = {
+        'AcaoA': 3,
+        'AcaoB': 1,
+        'AcaoC': 5,
+        'AcaoD': 1004
+    };
+    await ctx.reply(`${JSON.stringify(arm)}`);
+});
+
+// Outros
+
+bot.action('getOutros', async ctx => {
+    await ctx.reply('Em breve...');
 });
 
 /*
