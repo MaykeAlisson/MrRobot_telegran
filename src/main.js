@@ -1,5 +1,5 @@
 const env = require('../.env');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const Telegraf = require('telegraf');
 const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
@@ -47,18 +47,14 @@ bot.action('getDevelop', async ctx => {
 });
 
 bot.action('getIp', async ctx => {
-    await exec(`curl --max-time 60 --ipv4 icanhazip.com`, (error, stdout, stderr) => {
-        if (error) {
-            console.log(`error: ${error.message}`);
-            return
-        }
-        ctx.answerCbQuery(`Seu ip e ${stdout} ou mayke.mooo.com`)
-    });
+    const ip = execSync(`curl --max-time 60 --ipv4 icanhazip.com`);
+    await ctx.answerCbQuery(`Seu ip e ${ip} ou mayke.mooo.com`);
+    // execSync(`curl http://freedns.afraid.org/dynamic/update.php?VmRDMHhhbTVlTWFvQ1p1UWpSOXU6MTgwNDk4NjA=`)
 });
 
 bot.action('getArmazenamento', async ctx => {
-    const arm = '30Gb livre'
-    await ctx.reply(`Seu servidor esta com, ${arm}!`);
+    const arm = execSync('df -h')
+    await ctx.reply(`${arm}`);
 });
 
 // Financas
@@ -78,7 +74,7 @@ bot.action('getCarteira', async ctx => {
         'AcaoC': 5,
         'AcaoD': 1004
     };
-    await ctx.reply(`${JSON.stringify(arm)}`);
+    await ctx.reply(`${JSON.stringify(arm)}`, Extra.markdown());
 });
 
 // Outros
