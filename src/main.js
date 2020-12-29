@@ -1,4 +1,5 @@
 const env = require('../.env');
+const { exec } = require('child_process');
 const Telegraf = require('telegraf');
 const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
@@ -17,7 +18,7 @@ const optionsDevelop = Extra.markup(Markup.inlineKeyboard(
     [
         Markup.callbackButton('Ip', 'getIp'),
         Markup.callbackButton('Armazenamento', 'getArmazenamento')
-    ], {columns: 1}
+    ], {columns: 2}
 ));
 
 const optionsFinancas = Extra.markup(Markup.inlineKeyboard(
@@ -46,8 +47,13 @@ bot.action('getDevelop', async ctx => {
 });
 
 bot.action('getIp', async ctx => {
-    const ip = '123.100.123.84'
-    await ctx.answerCbQuery(`Seu ip e ${ip} ou mayke.mooo.com`)
+    await exec(`curl --max-time 60 --ipv4 icanhazip.com`, (error, stdout, stderr) => {
+        if (error) {
+            console.log(`error: ${error.message}`);
+            return
+        }
+        ctx.answerCbQuery(`Seu ip e ${stdout} ou mayke.mooo.com`)
+    });
 });
 
 bot.action('getArmazenamento', async ctx => {
