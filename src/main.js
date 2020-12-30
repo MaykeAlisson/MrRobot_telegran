@@ -49,7 +49,7 @@ bot.action('getDevelop', async ctx => {
 bot.action('getIp', async ctx => {
     const ip = execSync(`curl --max-time 60 --ipv4 icanhazip.com`);
     await ctx.answerCbQuery(`Seu ip e ${ip} ou mayke.mooo.com`);
-    // execSync(`curl http://freedns.afraid.org/dynamic/update.php?VmRDMHhhbTVlTWFvQ1p1UWpSOXU6MTgwNDk4NjA=`)
+    execSync(`curl http://freedns.afraid.org/dynamic/update.php?VmRDMHhhbTVlTWFvQ1p1UWpSOXU6MTgwNDk4NjA=`)
 });
 
 bot.action('getArmazenamento', async ctx => {
