@@ -1,5 +1,6 @@
 const env = require('../.env');
-const { exec, execSync } = require('child_process');
+const {exec, execSync} = require('child_process');
+const axios = require('axios');
 const Telegraf = require('telegraf');
 const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
@@ -31,7 +32,7 @@ const optionsFinancas = Extra.markup(Markup.inlineKeyboard(
 bot.start(async (ctx) => {
     const from = ctx.update.message.from
     console.log(from);
-    if (from.id !== env.user){
+    if (from.id !== env.user) {
         await ctx.reply(`Sinto muito ${from.first_name}, mas eu só fala com o meu mestre!`);
         return;
     }
@@ -64,17 +65,48 @@ bot.action('getFinancas', async ctx => {
 });
 
 bot.action('getCotacoes', async ctx => {
-    await ctx.reply('Executa api e retorna valores do bitcoins, dolar, bovespa ...');
+    const response = await axios.get(`https://api.hgbrasil.com/finance?key=${env.keyHg}`);
+    if (response.status !== 200) {
+        await ctx.reply(`Erro ao executar API status: ${response.status}`);
+        return;
+    }
+
+    const modedas = response.data.results.currencies;
+    const dolar = modedas.USD.buy;
+    const dolarVari = modedas.USD.variation;
+    const euro = modedas.EUR.buy;
+    const euroVari = modedas.EUR.variation;
+    const bitcoin = modedas.BTC.buy;
+    const bitcoinVari = modedas.BTC.variation;
+    const stocks = response.data.results.stocks;
+    const ibov = stocks.IBOVESPA.points;
+    const ibovVari = stocks.IBOVESPA.variation;
+    const nasdaq = stocks.NASDAQ.points;
+    const nasdaqVari = stocks.NASDAQ.variation;
+    await ctx.reply(`Dolar ${dolar} variação ${dolarVari}
+Euro ${euro} variação ${euroVari}
+Bitcoin ${bitcoin} variação ${bitcoinVari}
+Bovespa ${ibov} variação ${ibovVari}
+Nasdaq ${nasdaq} variação ${nasdaqVari}`);
 });
 
 bot.action('getCarteira', async ctx => {
-    const arm = {
-        'AcaoA': 3,
-        'AcaoB': 1,
-        'AcaoC': 5,
-        'AcaoD': 1004
-    };
-    await ctx.reply(`${JSON.stringify(arm)}`, Extra.markdown());
+    const carteira = new Map();
+    carteira.set('BBSE3', 3);
+    // carteira.set('FLRY3', 1);
+    // carteira.set('ITSA3', 8);
+
+    const results = {};
+
+    carteira.forEach(async (value, key) => {
+        let response = await axios.get(`https://api.hgbrasil.com/finance/stock_price?key=${env.keyHg}&symbol=${key}`)
+        if (response.status !== 200){
+            return;
+        }
+        console.log(`Chave: ${key} value: ${value}`)
+        let obj = response.data.results;
+        console.log(obj)
+    }, carteira)
 });
 
 // Outros
