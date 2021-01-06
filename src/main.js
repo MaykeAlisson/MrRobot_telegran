@@ -4,8 +4,12 @@ const axios = require('axios');
 const Telegraf = require('telegraf');
 const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
+const xlsx = require('node-xlsx')
+
 const bot = new Telegraf(env.token);
 
+//Caminho do arquivo a xlsx a ser lido
+const filePath = `${__dirname}/financeiro.xlsx`
 
 const options = Extra.markup(Markup.inlineKeyboard(
     [
@@ -26,6 +30,13 @@ const optionsFinancas = Extra.markup(Markup.inlineKeyboard(
     [
         Markup.callbackButton('Cotações', 'getCotacoes'),
         Markup.callbackButton('Carteira', 'getCarteira')
+    ], {columns: 2}
+));
+
+const optionsFinancasGetCarteira = Extra.markup(Markup.inlineKeyboard(
+    [
+        Markup.callbackButton('Atualizar Carteira', 'getCarteiraPlanilha'),
+        Markup.callbackButton('Cotações Carteira', 'getCarteiraCotacoes')
     ], {columns: 2}
 ));
 
@@ -91,6 +102,10 @@ Nasdaq ${nasdaq} variação ${nasdaqVari}`);
 });
 
 bot.action('getCarteira', async ctx => {
+    await ctx.reply('Options Carteira : ', optionsFinancasGetCarteira);
+});
+
+bot.action('getCarteiraCotacoes', async ctx => {
     const carteira = new Map();
     carteira.set('BBSE3', 3);
     // carteira.set('FLRY3', 1);
@@ -138,7 +153,21 @@ bot.hears('getIp', async (ctx) => {
 bot.hears(['dowloand', 'torrent'], async (ctx) => {
     await ctx.reply('estes sao os arquivos baixados');
 });
-
-
  */
+
+const getLeituraPlanilha = async () => {
+
+    //Lendo a planilha
+    const plan = await xlsx.parse(filePath)
+
+    //Trabalhando as informações para enviar ao banco
+    const finalData = plan[0].data;
+
+    finalData.map(([position1, position2]) => {
+        if(position1 === 'VALOR_1' && position2 === 'VALOR_2') return
+        console.log(`Ação ${position1} - Valor  ${position2}`)
+    });
+
+}
+
 bot.startPolling();
