@@ -1,173 +1,136 @@
-const env = require('../.env');
-const {exec, execSync} = require('child_process');
-const axios = require('axios');
-const Telegraf = require('telegraf');
-const Extra = require('telegraf/extra');
-const Markup = require('telegraf/markup');
-const xlsx = require('node-xlsx')
+const env = require("../.env");
+const { exec, execSync } = require("child_process");
+const axios = require("axios");
+const { Telegraf, Context, session } = require("telegraf");
+const { message } = require("telegraf/filters");
+const Markup = require("telegraf/markup");
+const Scenes = require("telegraf/scenes");
 
 const bot = new Telegraf(env.token);
 
-//Caminho do arquivo a xlsx a ser lido
-const filePath = `${__dirname}/financeiro.xlsx`
+const contactDataWizard = new Scenes.WizardScene(
+  "BUSCA_LIVRO_DATA_WIZARD_SCENE_ID", // first argument is Scene_ID, same as for BaseScene
+  (ctx) => {
+    ctx.reply("Qual o nome do livro?");
+    ctx.wizard.state.contactData = {};
+    return ctx.wizard.next();
+  },
+  (ctx) => {
+    // validation example
+    // if (ctx.message.text.length < 2) {
+    //   ctx.reply('Please enter name for real');
+    //   return;
+    // }
+    console.log("p1");
 
-const options = Extra.markup(Markup.inlineKeyboard(
-    [
-        Markup.callbackButton('Develop', 'getDevelop'),
-        Markup.callbackButton('Finanças', 'getFinancas'),
-        Markup.callbackButton('Outros', 'getOutros')
-    ], {columns: 1}
-));
+    ctx.wizard.state.contactData.livro = ctx.message.text;
+    console.log(ctx.message.text);
+    ctx.reply(`resultado da busca do livro ${ctx.message.text}`);
+    return ctx.scene.leave();
+    //
+    // return ctx.wizard.next();
+  }
+  // async (ctx) => {
+  //   ctx.wizard.state.contactData.email = ctx.message.text;
+  //   ctx.reply('Thank you for your replies, we'll contact your soon');
+  //   await mySendContactDataMomentBeforeErase(ctx.wizard.state.contactData);
+  //   return ctx.scene.leave();
+  // },
+);
 
-const optionsDevelop = Extra.markup(Markup.inlineKeyboard(
-    [
-        Markup.callbackButton('Ip', 'getIp'),
-        Markup.callbackButton('Armazenamento', 'getArmazenamento')
-    ], {columns: 2}
-));
+const stage = new Scenes.Stage([contactDataWizard]);
 
-const optionsFinancas = Extra.markup(Markup.inlineKeyboard(
-    [
-        Markup.callbackButton('Cotações', 'getCotacoes'),
-        Markup.callbackButton('Carteira', 'getCarteira')
-    ], {columns: 2}
-));
+bot.use(session());
+bot.use(stage.middleware());
 
-const optionsFinancasGetCarteira = Extra.markup(Markup.inlineKeyboard(
-    [
-        Markup.callbackButton('Atualizar Carteira', 'getCarteiraPlanilha'),
-        Markup.callbackButton('Cotações Carteira', 'getCarteiraCotacoes')
-    ], {columns: 2}
-));
-
-bot.start(async (ctx) => {
-    const from = ctx.update.message.from
-    console.log(from);
-    if (from.id !== env.user) {
-        await ctx.reply(`Sinto muito ${from.first_name}, mas eu só fala com o meu mestre!`);
-        return;
-    }
-    await ctx.reply(`Seja bem Vindo, ${from.first_name}!`);
-    await ctx.reply('Isso e oque posso fazer: ', options);
+bot.start(async (ctx) => await ctx.reply("Welcome"));
+bot.help(async (ctx) => await ctx.reply("Send me a sticker"));
+// bot.hears("hi", async (ctx) => await ctx.reply("Hey there"));
+bot.hears("hi", async (ctx) => {
+  console.log("antes");
+  const teste = await ctx.scene.enter("BUSCA_LIVRO_DATA_WIZARD_SCENE_ID");
+  console.log(teste);
 });
+bot.command("yourCommand", async (ctx) => await ctx.reply("Command invoked"));
 
-
-// Develop
-
-bot.action('getDevelop', async ctx => {
-    await ctx.reply('Options Develop : ', optionsDevelop);
-});
-
-bot.action('getIp', async ctx => {
-    const ip = execSync(`curl --max-time 60 --ipv4 icanhazip.com`);
-    await ctx.answerCbQuery(`Seu ip e ${ip} ou mayke.mooo.com`);
-    execSync(`curl http://freedns.afraid.org/dynamic/update.php?VmRDMHhhbTVlTWFvQ1p1UWpSOXU6MTgwNDk4NjA=`)
-});
-
-bot.action('getArmazenamento', async ctx => {
-    const arm = execSync('df -h')
-    await ctx.reply(`${arm}`);
-});
-
-// Financas
-
-bot.action('getFinancas', async ctx => {
-    await ctx.reply('Options Finaças : ', optionsFinancas);
-});
-
-bot.action('getCotacoes', async ctx => {
-    const response = await axios.get(`https://api.hgbrasil.com/finance?key=${env.keyHg}`);
-    if (response.status !== 200) {
-        await ctx.reply(`Erro ao executar API status: ${response.status}`);
-        return;
-    }
-
-    const modedas = response.data.results.currencies;
-    const dolar = modedas.USD.buy;
-    const dolarVari = modedas.USD.variation;
-    const euro = modedas.EUR.buy;
-    const euroVari = modedas.EUR.variation;
-    const bitcoin = modedas.BTC.buy;
-    const bitcoinVari = modedas.BTC.variation;
-    const stocks = response.data.results.stocks;
-    const ibov = stocks.IBOVESPA.points;
-    const ibovVari = stocks.IBOVESPA.variation;
-    const nasdaq = stocks.NASDAQ.points;
-    const nasdaqVari = stocks.NASDAQ.variation;
-    await ctx.reply(`Dolar ${dolar} variação ${dolarVari}
-Euro ${euro} variação ${euroVari}
-Bitcoin ${bitcoin} variação ${bitcoinVari}
-Bovespa ${ibov} variação ${ibovVari}
-Nasdaq ${nasdaq} variação ${nasdaqVari}`);
-});
-
-bot.action('getCarteira', async ctx => {
-    await ctx.reply('Options Carteira : ', optionsFinancasGetCarteira);
-});
-
-bot.action('getCarteiraCotacoes', async ctx => {
-    const carteira = new Map();
-    carteira.set('BBSE3', 3);
-    // carteira.set('FLRY3', 1);
-    // carteira.set('ITSA3', 8);
-
-    const results = {};
-
-    carteira.forEach(async (value, key) => {
-        let response = await axios.get(`https://api.hgbrasil.com/finance/stock_price?key=${env.keyHg}&symbol=${key}`)
-        if (response.status !== 200){
-            return;
-        }
-        console.log(`Chave: ${key} value: ${value}`)
-        let obj = response.data.results;
-        console.log(obj)
-    }, carteira)
-});
-
-// Outros
-
-bot.action('getOutros', async ctx => {
-    await ctx.reply('Em breve...');
-});
-
-/*
-bot.on('text', async (ctx, next) => {
-    const idUser = ctx.update.message.from.id;
-    if(idUser === env.user) {
-        await ctx.reply('Ao seu dispor, Mestre!!')
-        next();
-    } else {
-        await ctx.reply('Sinto muito, mas eu só fala com o meu mestre!')
-    }
-});
-
-bot.on('text', async (ctx, next) => {
-    await ctx.reply('Logado')
-    next()
-});
-
-bot.hears('getIp', async (ctx) => {
-    await ctx.reply('este e seu ip');
-});
-
-bot.hears(['dowloand', 'torrent'], async (ctx) => {
-    await ctx.reply('estes sao os arquivos baixados');
-});
- */
-
-const getLeituraPlanilha = async () => {
-
-    //Lendo a planilha
-    const plan = await xlsx.parse(filePath)
-
-    //Trabalhando as informações para enviar ao banco
-    const finalData = plan[0].data;
-
-    finalData.map(([position1, position2]) => {
-        if(position1 === 'VALOR_1' && position2 === 'VALOR_2') return
-        console.log(`Ação ${position1} - Valor  ${position2}`)
-    });
-
-}
-
+// bot.launch();
 bot.startPolling();
+
+// v1
+
+// const contactDataWizard = new Scenes.WizardScene(
+//   "BUSCA_LIVRO_DATA_WIZARD_SCENE_ID", // first argument is Scene_ID, same as for BaseScene
+//   (ctx) => {
+//     ctx.reply("Qual o nome do livro?");
+//     ctx.wizard.state.contactData = {};
+//     return ctx.wizard.next();
+//   },
+//   (ctx) => {
+//     // validation example
+//     // if (ctx.message.text.length < 2) {
+//     //   ctx.reply('Please enter name for real');
+//     //   return;
+//     // }
+//     ctx.wizard.state.contactData.livro = ctx.message.text;
+//     return ctx.scene.leave();
+//     // ctx.reply('Enter your e-mail');
+//     // return ctx.wizard.next();
+//   }
+//   // async (ctx) => {
+//   //   ctx.wizard.state.contactData.email = ctx.message.text;
+//   //   ctx.reply('Thank you for your replies, we'll contact your soon');
+//   //   await mySendContactDataMomentBeforeErase(ctx.wizard.state.contactData);
+//   //   return ctx.scene.leave();
+//   // },
+// );
+
+// const stage = new Scenes.Stage([contactDataWizard]);
+// bot.use(session());
+// bot.use(stage.middleware());
+
+// const options = Markup.inlineKeyboard(
+//   [
+//     Markup.button.callback("Biblioteca", "getBiblioteca"),
+//     // Markup.callbackButton("Finanças", "getFinancas"),
+//     // Markup.callbackButton("Outros", "getOutros"),
+//   ],
+//   { columns: 1 }
+// );
+
+// const optionsBiblioteca = Markup.inlineKeyboard(
+//   [Markup.button.callback("Buscar livro", "getLivro")],
+//   { columns: 2 }
+// );
+
+// bot.action("getBiblioteca", async (ctx) => {
+//   await ctx.reply("Options Biblioteca : ", optionsBiblioteca);
+// });
+
+// bot.action("getLivro", async (ctx) => {
+//   contactDataWizard.use((ctx) => {
+//     ctx.reply("Please choose either Movie or Theater");
+//   });
+//   // ctx.scene.enter("BUSCA_LIVRO_DATA_WIZARD_SCENE_ID");
+//   const resultado = ctx.scene;
+//   // await ctx.reply(`Digite o nome do livro`);
+//   console.log(resultado);
+//   // const ip = execSync(`curl --max-time 60 --ipv4 icanhazip.com`);
+//   // await ctx.answerCbQuery(`Seu ip e ${ip} ou mayke.mooo.com`);
+//   // execSync(
+//   //   `curl http://freedns.afraid.org/dynamic/update.php?VmRDMHhhbTVlTWFvQ1p1UWpSOXU6MTgwNDk4NjA=`
+//   // );
+// });
+
+// bot.start(async (ctx) => {
+//   const from = ctx.update.message.from;
+//   if (from.id !== env.user) {
+//     await ctx.reply(
+//       `Sinto muito ${from.first_name}, mas eu só fala com o meu mestre!`
+//     );
+//     return;
+//   }
+//   await ctx.reply(`Seja bem Vindo, ${from.first_name}!`);
+//   await ctx.reply("Isso e oque posso fazer: ", options);
+// });
+
+// bot.launch();

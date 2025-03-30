@@ -4,14 +4,16 @@
   "description": "Boot Telegram",
   "main": "index.js",
   "scripts": {
+    "start": "node src/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "Mayke Alisson",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.21.1",
-    "telegraf": "^3.38.0",
-    "node-xlsx": "^0.15.0"
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "node-xlsx": "^0.15.0",
+    "telegraf": "^4.16.3"
   }
 }
